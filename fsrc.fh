@@ -1,0 +1,189 @@
+      subroutine DAMPREP (r,r2,rr1,rr3,rr5,rr7,rr9,rr11,
+     &                       rorder,dmpi,dmpk,dmpik)
+      implicit none
+      integer rorder
+      RE r,r2,r3,r4
+      RE r5,r6,r7,r8
+      RE rr1,rr3,rr5
+      RE rr7,rr9,rr11
+      RE s,ds,d2s
+      RE d3s,d4s,d5s
+      RE dmpi,dmpk
+      RE dmpi2,dmpk2
+      RE dmpi22,dmpi23
+      RE dmpi24,dmpi25
+      RE dmpi26,dmpi27
+      RE dmpk22,dmpk23
+      RE dmpk24,dmpk25
+      RE dmpk26
+      RE eps,diff
+      RE expi,expk
+      RE dampi,dampk
+      RE pre,term,tmp
+      RE dmpik(*)
+c
+c
+c     compute tolerance value for damping exponents
+c
+      eps = 0.001d0
+      diff = abs(dmpi-dmpk)
+c
+c     treat the case where alpha damping exponents are equal
+c
+      if (diff .lt. eps) then
+         r3 = r2 * r
+         r4 = r3 * r
+         r5 = r4 * r
+         r6 = r5 * r
+         dmpi2 = 0.5d0 * dmpi
+         dampi = dmpi2 * r
+         expi = exp(-dampi)
+         dmpi22 = dmpi2 * dmpi2
+         dmpi23 = dmpi22 * dmpi2
+         dmpi24 = dmpi23 * dmpi2
+         dmpi25 = dmpi24 * dmpi2
+         pre = 2.0d0
+         s = (r + dmpi2*r2 + dmpi22*r3/3.0d0) * expi
+         ds = (dmpi22*r3 + dmpi23*r4) * expi / 3.0d0
+         d2s = dmpi24 * expi * r5 / 9.0d0
+         d3s = dmpi25 * expi * r6 / 45.0d0
+         if (rorder .ge. 9) then
+            r7 = r6 * r
+            dmpi26 = dmpi25 * dmpi2
+            d4s = (dmpi25*r6 + dmpi26*r7) * expi / 315.0d0
+            if (rorder .ge. 11) then
+               r8 = r7 * r
+               dmpi27 = dmpi2 * dmpi26
+               d5s = (dmpi25*r6 + dmpi26*r7 + dmpi27*r8/3.0d0)
+     &                   * expi / 945.0d0
+            end if
+         end if
+c
+c     treat the case where alpha damping exponents are unequal
+c
+      else
+         r3 = r2 * r
+         r4 = r3 * r
+         dmpi2 = 0.5d0 * dmpi
+         dmpk2 = 0.5d0 * dmpk
+         dampi = dmpi2 * r
+         dampk = dmpk2 * r
+         expi = exp(-dampi)
+         expk = exp(-dampk)
+         dmpi22 = dmpi2 * dmpi2
+         dmpi23 = dmpi22 * dmpi2
+         dmpi24 = dmpi23 * dmpi2
+         dmpk22 = dmpk2 * dmpk2
+         dmpk23 = dmpk22 * dmpk2
+         dmpk24 = dmpk23 * dmpk2
+         term = dmpi22 - dmpk22
+         pre = 128.0d0 * dmpi23 * dmpk23 / term**4
+         tmp = 4.0d0 * dmpi2 * dmpk2 / term
+         s = (dampi-tmp)*expk + (dampk+tmp)*expi
+         ds = (dmpi2*dmpk2*r2 - 4.0d0*dmpi2*dmpk22*r/term
+     &            - 4.0d0*dmpi2*dmpk2/term) * expk
+     &      + (dmpi2*dmpk2*r2 + 4.0d0*dmpi22*dmpk2*r/term
+     &            + 4.0d0*dmpi2*dmpk2/term) * expi
+         d2s = (dmpi2*dmpk2*r2/3.0d0
+     &             + dmpi2*dmpk22*r3/3.0d0
+     &             - (4.0d0/3.0d0)*dmpi2*dmpk23*r2/term
+     &             - 4.0d0*dmpi2*dmpk22*r/term
+     &             - 4.0d0*dmpi2*dmpk2/term) * expk
+     &       + (dmpi2*dmpk2*r2/3.0d0
+     &             + dmpi22*dmpk2*r3/3.0d0
+     &             + (4.0d0/3.0d0)*dmpi23*dmpk2*r2/term
+     &             + 4.0d0*dmpi22*dmpk2*r/term
+     &             + 4.0d0*dmpi2*dmpk2/term) * expi
+         d3s = (dmpi2*dmpk23*r4/15.0d0
+     &             + dmpi2*dmpk22*r3/5.0d0
+     &             + dmpi2*dmpk2*r2/5.0d0
+     &             - (4.0d0/15.0d0)*dmpi2*dmpk24*r3/term
+     &             - (8.0d0/5.0d0)*dmpi2*dmpk23*r2/term
+     &             - 4.0d0*dmpi2*dmpk22*r/term
+     &             - 4.0d0/term*dmpi2*dmpk2) * expk
+     &       + (dmpi23*dmpk2*r4/15.0d0
+     &             + dmpi22*dmpk2*r3/5.0d0
+     &             + dmpi2*dmpk2*r2/5.0d0
+     &             + (4.0d0/15.0d0)*dmpi24*dmpk2*r3/term
+     &             + (8.0d0/5.0d0)*dmpi23*dmpk2*r2/term
+     &             + 4.0d0*dmpi22*dmpk2*r/term
+     &             + 4.0d0/term*dmpi2*dmpk2) * expi
+         if (rorder .ge. 9) then
+            r5 = r4 * r
+            dmpi25 = dmpi24 * dmpi2
+            dmpk25 = dmpk24 * dmpk2
+            d4s = (dmpi2*dmpk24*r5/105.0d0
+     &                + (2.0d0/35.0d0)*dmpi2*dmpk23*r4
+     &                + dmpi2*dmpk22*r3/7.0d0
+     &                + dmpi2*dmpk2*r2/7.0d0
+     &                - (4.0d0/105.0d0)*dmpi2*dmpk25*r4/term
+     &                - (8.0d0/21.0d0)*dmpi2*dmpk24*r3/term
+     &                - (12.0d0/7.0d0)*dmpi2*dmpk23*r2/term
+     &                - 4.0d0*dmpi2*dmpk22*r/term
+     &                - 4.0d0*dmpi2*dmpk2/term) * expk
+     &          + (dmpi24*dmpk2*r5/105.0d0
+     &                + (2.0d0/35.0d0)*dmpi23*dmpk2*r4
+     &                + dmpi22*dmpk2*r3/7.0d0
+     &                + dmpi2*dmpk2*r2/7.0d0
+     &                + (4.0d0/105.0d0)*dmpi25*dmpk2*r4/term
+     &                + (8.0d0/21.0d0)*dmpi24*dmpk2*r3/term
+     &                + (12.0d0/7.0d0)*dmpi23*dmpk2*r2/term
+     &                + 4.0d0*dmpi22*dmpk2*r/term
+     &                + 4.0d0*dmpi2*dmpk2/term) * expi
+            if (rorder .ge. 11) then
+               r6 = r5 * r
+               dmpi26 = dmpi25 * dmpi2
+               dmpk26 = dmpk25 * dmpk2
+               d5s = (dmpi2*dmpk25*r6/945.0d0
+     &                   + (2.0d0/189.0d0)*dmpi2*dmpk24*r5
+     &                   + dmpi2*dmpk23*r4/21.0d0
+     &                   + dmpi2*dmpk22*r3/9.0d0
+     &                   + dmpi2*dmpk2*r2/9.0d0
+     &                   - (4.0d0/945.0d0)*dmpi2*dmpk26*r5/term
+     &                   - (4.0d0/63.0d0)*dmpi2*dmpk25*r4/term
+     &                   - (4.0d0/9.0d0)*dmpi2*dmpk24*r3/term
+     &                   - (16.0d0/9.0d0)*dmpi2*dmpk23*r2/term
+     &                   - 4.0d0*dmpi2*dmpk22*r/term
+     &                   - 4.0d0*dmpi2*dmpk2/term) * expk
+     &             + (dmpi25*dmpk2*r6/945.0d0
+     &                   + (2.0d0/189.0d0)*dmpi24*dmpk2*r5
+     &                   + dmpi23*dmpk2*r4/21.0d0
+     &                   + dmpi22*dmpk2*r3/9.0d0
+     &                   + dmpi2*dmpk2*r2/9.0d0
+     &                   + (4.0d0/945.0d0)*dmpi26*dmpk2*r5/term
+     &                   + (4.0d0/63.0d0)*dmpi25*dmpk2*r4/term
+     &                   + (4.0d0/9.0d0)*dmpi24*dmpk2*r3/term
+     &                   + (16.0d0/9.0d0)*dmpi23*dmpk2*r2/term
+     &                   + 4.0d0*dmpi22*dmpk2*r/term
+     &                   + 4.0d0*dmpi2*dmpk2/term) * expi
+            end if
+         end if
+      end if
+c
+c     convert partial derivatives into full derivatives
+c
+      s = s * rr1
+      ds = ds * rr3
+      d2s = d2s * rr5
+      d3s = d3s * rr7
+      dmpik(1) = 0.5d0 * pre * s * s
+      dmpik(3) = pre * s * ds
+      dmpik(5) = pre * (s*d2s + ds*ds)
+      dmpik(7) = pre * (s*d3s + 3.0d0*ds*d2s)
+      if (rorder .ge. 9) then
+         d4s = d4s * rr9
+         dmpik(9) = pre * (s*d4s + 4.0d0*ds*d3s + 3.0d0*d2s*d2s)
+         if (rorder .ge. 11) then
+            d5s = d5s * rr11
+            dmpik(11) = pre * (s*d5s + 5.0d0*ds*d4s + 10.0d0*d2s*d3s)
+         end if
+      end if
+#if 0
+   10 format(a5,3f16.8)
+      write(*,10) 'FFFF',(0.5*pre)**0.5*d5s,
+     &   (0.5*pre)**0.5*d4s,(0.5*pre)**0.5*d3s
+      write(*,10) 'FFFF',(0.5*pre)**0.5*d2s,
+     &   (0.5*pre)**0.5*ds,(0.5*pre)**0.5*s
+#endif
+      return
+      end

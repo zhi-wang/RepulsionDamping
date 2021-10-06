@@ -1,0 +1,5 @@
+*.o
+*.out
+*clang-format
+*.txt
+.vscode
