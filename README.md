@@ -1,5 +1,7 @@
 # Comparing different implementations of the repulsion damping coefficients in the HIPPO force field
 
+[Documentation on overleaf.com](https://www.overleaf.com/read/qnhhwbpctrqn)
+
 ## Compile, Run, and Clean
 
 ```bash
