@@ -387,24 +387,31 @@ inline void damp_gordon1(real* restrict dmpik, real r, real ai, real aj)
           (l30x + l31x) * ea + (l30y + l31y) * eb);
 
    // [4]
-   real k41, k42, k43, k44, k45, k46, l40x, l41x, l40y, l41y;
-   k41 = 3 * c2 * (c * (c * (c * (c + 5) + 15) + 30) + 30);
-   k42 = c2 *
-      (c2 * (c * ((c - 2) * c - 9) - 9) -
-       12 * (c * (c * (c + 3) + 6) + 6) * d2);
-   k43 = c2 * (18 * (c * (c + 2) + 2) * d2 - 4 * c2 * ((c - 3) * c - 3));
-   k44 = c2 * (6 * (c - 3) * c2 - 12 * (c + 2) * d2);
-   k45 = c * (3 * (c + 3) * d2 - 4 * (c - 2) * c2);
-   k46 = c3 * d2;
-   l40x = TINKER_GORDON1_M4(a) * l00x, l41x = a * TINKER_GORDON1_M3(a) * l01x;
-   l40y = TINKER_GORDON1_M4(b) * l00y, l41y = b * TINKER_GORDON1_M3(b) * l01y;
-   dmpik[4] = 1 -
-      iC4 *
-         ((k41 * f1d + k42 * f2d +
-           d2 * (k43 * f3d + d2 * (k44 * f4d + d2 * (k45 * f5d + k46 * f6d)))) *
-             ec +
-          (l40x + l41x) * ea + (l40y + l41y) * eb);
+   if CONSTEXPR (order > 7) {
+      real k41, k42, k43, k44, k45, k46, l40x, l41x, l40y, l41y;
+      k41 = 3 * c2 * (c * (c * (c * (c + 5) + 15) + 30) + 30);
+      k42 = c2 *
+         (c2 * (c * ((c - 2) * c - 9) - 9) -
+          12 * (c * (c * (c + 3) + 6) + 6) * d2);
+      k43 = c2 * (18 * (c * (c + 2) + 2) * d2 - 4 * c2 * ((c - 3) * c - 3));
+      k44 = c2 * (6 * (c - 3) * c2 - 12 * (c + 2) * d2);
+      k45 = c * (3 * (c + 3) * d2 - 4 * (c - 2) * c2);
+      k46 = c3 * d2;
+      l40x = TINKER_GORDON1_M4(a) * l00x,
+      l41x = a * TINKER_GORDON1_M3(a) * l01x;
+      l40y = TINKER_GORDON1_M4(b) * l00y,
+      l41y = b * TINKER_GORDON1_M3(b) * l01y;
+      dmpik[4] = 1 -
+         iC4 *
+            ((k41 * f1d + k42 * f2d +
+              d2 *
+                 (k43 * f3d +
+                  d2 * (k44 * f4d + d2 * (k45 * f5d + k46 * f6d)))) *
+                ec +
+             (l40x + l41x) * ea + (l40y + l41y) * eb);
+   }
 
+   // [5]
    if CONSTEXPR (order > 9) {
       real k51 = 0, k52 = 0, k53 = 0, k54 = 0, k55 = 0, k56 = 0, k57 = 0, l50x,
            l51x, l50y, l51y;
@@ -434,7 +441,6 @@ inline void damp_gordon1(real* restrict dmpik, real r, real ai, real aj)
                 ec +
              (l50x + l51x) * ea + (l50y + l51y) * eb);
    }
-
 
 #undef TINKER_GORDON1_L00
 #undef TINKER_GORDON1_L01
