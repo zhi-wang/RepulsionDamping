@@ -23,6 +23,12 @@ extern "C"
    /* Fortran real*4 Gordon1 */
    void dampg1s_(float* r, int* rorder, float* dmpi, float* dmpk, float* dmpik);
 
+   /* Fortran real*8 Dispersion */
+   void dmpdispd_(double* r, double* dmpi, double* dmpk, double* dmpik);
+
+   /* Fortran real*4 Dispersion */
+   void dmpdisps_(float* r, float* dmpi, float* dmpk, float* dmpik);
+
    /* Run tests in double precision. */
    void rund(char c, double arr[3]);
 

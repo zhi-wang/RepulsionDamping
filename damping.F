@@ -2,7 +2,7 @@
 #define FLT_8
 
 #define DAMPREP dampd
-#include "fsrc.fh"
+#include "frepel.fh"
 #undef DAMPREP
 
 #define DAMPG1 dampg1d
@@ -10,6 +10,10 @@
 #include "fgordon.fh"
 #undef DAMPG1
 #undef DAMPPOLE
+
+#define DMPDISP dmpdispd
+#include "fdisp.fh"
+#undef DMPDISP
 
 #undef FLT_8
 #undef RE
@@ -20,7 +24,7 @@
 #define FLT_4
 
 #define DAMPREP damps
-#include "fsrc.fh"
+#include "frepel.fh"
 #undef DAMPREP
 
 #define DAMPG1 dampg1s
@@ -28,6 +32,10 @@
 #include "fgordon.fh"
 #undef DAMPG1
 #undef DAMPPOLE
+
+#define DMPDISP dmpdisps
+#include "fdisp.fh"
+#undef DMPDISP
 
 #undef FLT_4
 #undef RE

@@ -4,7 +4,7 @@ FC = gfortran
 .PHONY: all
 all: a.out
 
-damping.o: damping.F fsrc.fh
+damping.o: damping.F frepel.fh fgordon.fh fdisp.fh
 	$(FC) damping.F -c $(OPT) -o $@
 
 main.o: main.c

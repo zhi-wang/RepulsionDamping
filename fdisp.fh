@@ -1,0 +1,74 @@
+      subroutine DMPDISP (r,alphai,alphak,dmpik)
+      implicit none
+      RE r,alphai,alphak
+      RE ai,ak,eps
+      logical diff
+      RE dmpik(*)
+      RE di,di2,di3,expi,ai2,ai3,ti,ti2
+      RE dk,dk2,dk3,expk,ak2,ak3,tk,tk2
+      RE damp3,damp5,damp,ddamp
+      RE di4,di5
+c
+#if defined(FLT_8)
+      eps = 0.001d0
+#elif defined(FLT_4)
+      eps = 0.05
+#endif
+      diff = (abs(alphai-alphak) .gt. eps)
+      ! diff = (alphai .ne. alphak)
+      if (diff) then
+         ai = alphai
+         ak = alphak   
+      else
+         ai = (alphai+alphak)/2
+         ak = ai
+      end if
+c
+      di = ai * r
+      di2 = di * di
+      di3 = di * di2
+      dk = ak * r
+      expi = exp(-di)
+      expk = exp(-dk)
+c
+      if (diff) then
+         ai2 = ai * ai
+         ai3 = ai * ai2
+         ak2 = ak * ak
+         ak3 = ak * ak2
+         dk2 = dk * dk
+         dk3 = dk * dk2
+         ti = ak2 / (ak2-ai2)
+         tk = ai2 / (ai2-ak2)
+         ti2 = ti * ti
+         tk2 = tk * tk
+         damp3 = 1.0d0 - ti2*(1.0d0+di+0.5d0*di2)*expi
+     &      - tk2*(1.0d0+dk+0.5d0*dk2)*expk
+     &      - 2.0d0*ti2*tk*(1.0d0+di)*expi
+     &      - 2.0d0*tk2*ti*(1.0d0+dk)*expk
+         damp5 = 1.0d0 - ti2*(1.0d0+di+0.5d0*di2
+     &      +di3/6.0d0)*expi
+     &      - tk2*(1.0d0+dk+0.5d0*dk2
+     &      +dk3/6.0d0)*expk
+     &      - 2.0d0*ti2*tk*(1.0+di+di2/3.0d0)*expi
+     &      - 2.0d0*tk2*ti*(1.0+dk+dk2/3.0d0)*expk
+         ddamp = 0.25d0 * di2 * ti2 * ai * expi
+     &      * (r*ai+4.0d0*tk-1.0d0)
+     &      + 0.25d0 * dk2 * tk2 * ak * expk
+     &      * (r*ak+4.0d0*ti-1.0d0)
+      else
+         di4 = di2 * di2
+         di5 = di2 * di3
+         damp3 = 1.0d0 - (1.0d0+di+0.5d0*di2
+     &      +7.0d0*di3/48.0d0+di4/48.0d0)*expi
+            damp5 = 1.0d0 - (1.0d0+di+0.5d0*di2
+     &      +di3/6.0d0+di4/24.0d0+di5/144.0d0)*expi
+         ddamp = ai * expi * (di5-3.0d0*di3-3.0d0*di2)
+     &      / 96.0d0
+      end if
+      damp = 1.5d0*damp5 - 0.5d0*damp3
+c
+      dmpik(1) = damp
+      dmpik(3) = ddamp
+      return
+      end
