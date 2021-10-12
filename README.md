@@ -1,4 +1,4 @@
-# Comparing different implementations of the repulsion damping coefficients in the HIPPO force field
+# Comparing different implementations of the repulsion/electrostatics/dispersion damping coefficients in the HIPPO force field
 
 [Documentation on overleaf.com](https://www.overleaf.com/read/qnhhwbpctrqn)
 
