@@ -294,6 +294,158 @@ inline void damp_rep(real* restrict dmpik, real r, real rr1, real r2, real rr3,
    // clang-format on
 }
 
+#pragma acc routine seq
+template <int order, class real>
+SEQ_CUDA
+inline void damp_gordon1(real* restrict dmpik, real r, real ai, real aj)
+{
+   real a = ai * r, b = aj * r;
+   real c = (b + a) / 2, d = (b - a) / 2;
+   real expmc = REAL_EXP(-c);
+   real expmd = REAL_EXP(-d);
+   real exppd = REAL_EXP(d);
+
+   real t = (ai + aj) * r;
+   real x = a / t, y = 1 - x;
+
+   real c2 = c * c, c3 = c * c * c;
+   real d2 = d * d, d3 = d * d * d;
+   real d4 = d2 * d2;
+   real c2d2 = c2 * d2;
+
+   real f1d, f2d, f3d, f4d, f5d, f6d, f7d;
+   f1d = fsinhc<1>(d, d2, d3, d4, expmd, exppd);
+   f2d = fsinhc<2>(d, d2, d3, d4, expmd, exppd);
+   f3d = fsinhc<3>(d, d2, d3, d4, expmd, exppd);
+   f4d = fsinhc<4>(d, d2, d3, d4, expmd, exppd);
+   f5d = fsinhc<5>(d, d2, d3, d4, expmd, exppd);
+   f6d = fsinhc<6>(d, d2, d3, d4, expmd, exppd);
+   if CONSTEXPR (order > 9)
+      f7d = fsinhc<7>(d, d2, d3, d4, expmd, exppd);
+
+   real iC2 = 1. / 3, iC3 = 1. / 15, iC4 = 1. / 105, iC5 = 1. / 945;
+   real ec = expmc / 16, ea = REAL_EXP(-a) / 32, eb = REAL_EXP(-b) / 32;
+
+#define TINKER_GORDON1_L00(X) (4 * ((X) * ((X) * (2 * (X)-3) - 3) + 6))
+#define TINKER_GORDON1_L01(X) ((X) * (4 * ((X)-3) * (X) + 11) - 2)
+#define TINKER_GORDON1_M0(a)  (1)
+#define TINKER_GORDON1_M1(a)  ((a) + 1)
+#define TINKER_GORDON1_M2(a)  ((a) * ((a) + 3) + 3)
+#define TINKER_GORDON1_M3(a)  ((a) * ((a) * ((a) + 6) + 15) + 15)
+#define TINKER_GORDON1_M4(a)  ((a) * ((a) * ((a) * ((a) + 10) + 45) + 105) + 105)
+#define TINKER_GORDON1_M5(a)                                                   \
+   ((a) * ((a) * ((a) * ((a) * ((a) + 15) + 105) + 420) + 945) + 945)
+
+   // [0]
+   real k01, k02, l00x, l01x, l00y, l01y;
+   k01 = 3 * c * (c + 3);
+   k02 = c3;
+   l00x = TINKER_GORDON1_L00(x), l01x = TINKER_GORDON1_L01(x) * t;
+   l00y = TINKER_GORDON1_L00(y), l01y = TINKER_GORDON1_L01(y) * t;
+   dmpik[0] = 1 -
+      ((k01 * f1d + k02 * f2d) * ec + (l00x + l01x) * ea + (l00y + l01y) * eb);
+
+   // [1]
+   real k11, k12, k13, l10x, l11x, l10y, l11y;
+   k11 = 3 * c2 * (c + 2);
+   k12 = c * ((c - 2) * c2 - 3 * (c + 3) * d2);
+   k13 = -c3 * d2;
+   l10x = TINKER_GORDON1_M1(a) * l00x, l11x = a * TINKER_GORDON1_M0(a) * l01x;
+   l10y = TINKER_GORDON1_M1(b) * l00y, l11y = b * TINKER_GORDON1_M0(b) * l01y;
+   dmpik[1] = 1 -
+      ((k11 * f1d + k12 * f2d + k13 * f3d) * ec + (l10x + l11x) * ea +
+       (l10y + l11y) * eb);
+
+
+   // [2]
+   real k21, k22, k23, k24, l20x, l21x, l20y, l21y;
+   k21 = 3 * c2 * (c * (c + 2) + 2);
+   k22 = c2 * ((c - 3) * c2 - 6 * (c + 2) * d2);
+   k23 = 3 * (c + 3) * d2 - 2 * (c - 2) * c2;
+   k24 = c2d2;
+   l20x = TINKER_GORDON1_M2(a) * l00x, l21x = a * TINKER_GORDON1_M1(a) * l01x;
+   l20y = TINKER_GORDON1_M2(b) * l00y, l21y = b * TINKER_GORDON1_M1(b) * l01y;
+   dmpik[2] = 1 -
+      iC2 *
+         ((k21 * f1d + k22 * f2d + c * d2 * (k23 * f3d + k24 * f4d)) * ec +
+          (l20x + l21x) * ea + (l20y + l21y) * eb);
+
+   // [3]
+   real k31, k32, k33, k34, k35, l30x, l31x, l30y, l31y;
+   k31 = 3 * c2 * (c * (c * (c + 3) + 6) + 6);
+   k32 = c2 * (c2 * ((c - 3) * c - 3) - 9 * (c * (c + 2) + 2) * d2);
+   k33 = c2 * (9 * (c + 2) * d2 - 3 * (c - 3) * c2);
+   k34 = 3 * (c - 2) * c3 - 3 * c * (c + 3) * d2;
+   k35 = -c3 * d2;
+   l30x = TINKER_GORDON1_M3(a) * l00x, l31x = a * TINKER_GORDON1_M2(a) * l01x;
+   l30y = TINKER_GORDON1_M3(b) * l00y, l31y = b * TINKER_GORDON1_M2(b) * l01y;
+   dmpik[3] = 1 -
+      iC3 *
+         ((k31 * f1d + k32 * f2d +
+           d2 * (k33 * f3d + d2 * (k34 * f4d + k35 * f5d))) *
+             ec +
+          (l30x + l31x) * ea + (l30y + l31y) * eb);
+
+   // [4]
+   real k41, k42, k43, k44, k45, k46, l40x, l41x, l40y, l41y;
+   k41 = 3 * c2 * (c * (c * (c * (c + 5) + 15) + 30) + 30);
+   k42 = c2 *
+      (c2 * (c * ((c - 2) * c - 9) - 9) -
+       12 * (c * (c * (c + 3) + 6) + 6) * d2);
+   k43 = c2 * (18 * (c * (c + 2) + 2) * d2 - 4 * c2 * ((c - 3) * c - 3));
+   k44 = c2 * (6 * (c - 3) * c2 - 12 * (c + 2) * d2);
+   k45 = c * (3 * (c + 3) * d2 - 4 * (c - 2) * c2);
+   k46 = c3 * d2;
+   l40x = TINKER_GORDON1_M4(a) * l00x, l41x = a * TINKER_GORDON1_M3(a) * l01x;
+   l40y = TINKER_GORDON1_M4(b) * l00y, l41y = b * TINKER_GORDON1_M3(b) * l01y;
+   dmpik[4] = 1 -
+      iC4 *
+         ((k41 * f1d + k42 * f2d +
+           d2 * (k43 * f3d + d2 * (k44 * f4d + d2 * (k45 * f5d + k46 * f6d)))) *
+             ec +
+          (l40x + l41x) * ea + (l40y + l41y) * eb);
+
+   if CONSTEXPR (order > 9) {
+      real k51 = 0, k52 = 0, k53 = 0, k54 = 0, k55 = 0, k56 = 0, k57 = 0, l50x,
+           l51x, l50y, l51y;
+      k51 = 3 * c2 * (c * (c * (c * (c * (c + 8) + 35) + 105) + 210) + 210);
+      k52 = c2 *
+         (c2 * (c * (c3 - 15 * c - 45) - 45) -
+          15 * (c * (c * (c * (c + 5) + 15) + 30) + 30) * d2);
+      k53 = c2 *
+         (5 * (c * (9 - (c - 2) * c) + 9) * c2 +
+          30 * (c * (c * (c + 3) + 6) + 6) * d2);
+      k54 = c2 * (10 * c2 * ((c - 3) * c - 3) - 30 * (c * (c + 2) + 2) * d2);
+      k55 = c2 * (15 * (c + 2) * d2 - 10 * (c - 3) * c2);
+      k56 = c * (5 * (c - 2) * c2 - 3 * (c + 3) * d2);
+      k57 = -c3 * d2;
+      l50x = TINKER_GORDON1_M5(a) * l00x,
+      l51x = a * TINKER_GORDON1_M4(a) * l01x;
+      l50y = TINKER_GORDON1_M5(b) * l00y,
+      l51y = b * TINKER_GORDON1_M4(b) * l01y;
+      dmpik[5] = 1 -
+         iC5 *
+            ((k51 * f1d + k52 * f2d +
+              d2 *
+                 (k53 * f3d +
+                  d2 *
+                     (k54 * f4d +
+                      d2 * (k55 * f5d + d2 * (k56 * f6d + k57 * f7d))))) *
+                ec +
+             (l50x + l51x) * ea + (l50y + l51y) * eb);
+   }
+
+
+#undef TINKER_GORDON1_L00
+#undef TINKER_GORDON1_L01
+#undef TINKER_GORDON1_M0
+#undef TINKER_GORDON1_M1
+#undef TINKER_GORDON1_M2
+#undef TINKER_GORDON1_M3
+#undef TINKER_GORDON1_M4
+#undef TINKER_GORDON1_M5
+}
+
 /* ------ Output ------ */
 
 template <class RE>
@@ -353,6 +505,11 @@ void run(char c, RE arr[3])
          damp_rep<9>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi, dmpk);
       else if (rorder == 11)
          damp_rep<11>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi, dmpk);
+   } else if (c == 'G' or c == 'g') {
+      if (rorder == 9)
+         damp_gordon1<9>(dmpik, r, dmpi, dmpk);
+      else if (rorder == 11)
+         damp_gordon1<11>(dmpik, r, dmpi, dmpk);
    }
    // copy
    dmpik[2 * 5] = dmpik[5];
