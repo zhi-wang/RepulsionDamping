@@ -1,0 +1,263 @@
+      subroutine DAMPG1 (r,rorder,alphai,alphak,dmpik)
+      implicit none
+      integer rorder
+      character*10 pentyp
+      RE r,alphai,alphak
+      RE dmpik(*)
+      RE dmpi(11),dmpk(11)
+c
+      pentyp = 'GORDON1   '
+      call DAMPPOLE (r,rorder,alphai,alphak,dmpi,dmpk,dmpik,pentyp)
+      return
+      end
+c
+c
+c
+      subroutine DAMPPOLE (r,rorder,alphai,alphak,dmpi,dmpk,dmpik,
+     & pentyp)
+      implicit none
+      integer rorder
+      character*10 pentyp
+      RE termi,termk
+      RE termi2,termk2
+      RE alphai,alphak
+      RE alphai2,alphak2
+      RE r,eps,diff
+      RE expi,expk
+      RE dampi,dampk
+      RE dampi2,dampi3
+      RE dampi4,dampi5
+      RE dampi6,dampi7
+      RE dampi8
+      RE dampk2,dampk3
+      RE dampk4,dampk5
+      RE dampk6
+      RE dmpi(*)
+      RE dmpk(*)
+      RE dmpik(*)
+c
+c
+c     compute tolerance and exponential damping factors
+c
+#if defined(FLT_8)
+      eps = 0.001d0
+#elif defined(FLT_4)
+      eps = 0.05
+#endif
+      diff = abs(alphai-alphak)
+      dampi = alphai * r
+      dampk = alphak * r
+      expi = exp(-dampi)
+      expk = exp(-dampk)
+c
+c     core-valence charge penetration damping for Gordon f1
+c
+      if (pentyp .eq. 'GORDON1') then
+         dampi2 = dampi * dampi
+         dampi3 = dampi * dampi2
+         dampi4 = dampi2 * dampi2
+         dampi5 = dampi2 * dampi3
+         dmpi(1) = 1.0d0 - (1.0d0 + 0.5d0*dampi)*expi
+         dmpi(3) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2)*expi
+         dmpi(5) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                + dampi3/6.0d0)*expi
+         dmpi(7) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                + dampi3/6.0d0 + dampi4/30.0d0)*expi
+         dmpi(9) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                + dampi3/6.0d0 + 4.0d0*dampi4/105.0d0
+     &                + dampi5/210.0d0)*expi
+         if (diff .lt. eps) then
+            dmpk(1) = dmpi(1)
+            dmpk(3) = dmpi(3)
+            dmpk(5) = dmpi(5)
+            dmpk(7) = dmpi(7)
+            dmpk(9) = dmpi(9)
+         else
+            dampk2 = dampk * dampk
+            dampk3 = dampk * dampk2
+            dampk4 = dampk2 * dampk2
+            dampk5 = dampk2 * dampk3
+            dmpk(1) = 1.0d0 - (1.0d0 + 0.5d0*dampk)*expk
+            dmpk(3) = 1.0d0 - (1.0d0 + dampk + 0.5d0*dampk2)*expk
+            dmpk(5) = 1.0d0 - (1.0d0 + dampk + 0.5d0*dampk2
+     &                   + dampk3/6.0d0)*expk
+            dmpk(7) = 1.0d0 - (1.0d0 + dampk + 0.5d0*dampk2
+     &                   + dampk3/6.0d0 + dampk4/30.0d0)*expk
+            dmpk(9) = 1.0d0 - (1.0d0 + dampk + 0.5d0*dampk2
+     &                   + dampk3/6.0d0 + 4.0d0*dampk4/105.0d0
+     &                   + dampk5/210.0d0)*expk
+         end if
+c
+c     valence-valence charge penetration damping for Gordon f1
+c
+         if (diff .lt. eps) then
+            dampi6 = dampi3 * dampi3
+            dampi7 = dampi3 * dampi4
+            dmpik(1) = 1.0d0 - (1.0d0 + 11.0d0*dampi/16.0d0
+     &                    + 3.0d0*dampi2/16.0d0
+     &                    + dampi3/48.0d0)*expi
+            dmpik(3) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                    + 7.0d0*dampi3/48.0d0
+     &                    + dampi4/48.0d0)*expi
+            dmpik(5) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0 + dampi4/24.0d0
+     &                    + dampi5/144.0d0)*expi
+            dmpik(7) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0 + dampi4/24.0d0
+     &                    + dampi5/120.0d0 + dampi6/720.0d0)*expi
+            dmpik(9) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0 + dampi4/24.0d0
+     &                    + dampi5/120.0d0 + dampi6/720.0d0
+     &                    + dampi7/5040.0d0)*expi
+            if (rorder .ge. 11) then
+               dampi8 = dampi4 * dampi4
+               dmpik(11) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                        + dampi3/6.0d0 + dampi4/24.0d0
+     &                        + dampi5/120.0d0 + dampi6/720.0d0
+     &                        + dampi7/5040.0d0 + dampi8/45360.0d0)*expi
+            end if
+         else
+            alphai2 = alphai * alphai
+            alphak2 = alphak * alphak
+            termi = alphak2 / (alphak2-alphai2)
+            termk = alphai2 / (alphai2-alphak2)
+            termi2 = termi * termi
+            termk2 = termk * termk
+            dmpik(1) = 1.0d0 - termi2*(1.0d0 + 2.0d0*termk
+     &                    + 0.5d0*dampi)*expi
+     &                 - termk2*(1.0d0 + 2.0d0*termi
+     &                      + 0.5d0*dampk)*expk
+            dmpik(3) = 1.0d0 - termi2*(1.0d0+dampi+0.5d0*dampi2)*expi
+     &                    - termk2*(1.0d0+dampk+0.5d0*dampk2)*expk
+     &                    - 2.0d0*termi2*termk*(1.0d0+dampi)*expi
+     &                    - 2.0d0*termk2*termi*(1.0d0+dampk)*expk
+            dmpik(5) = 1.0d0 - termi2*(1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0)*expi
+     &                 - termk2*(1.0d0 + dampk + 0.5d0*dampk2
+     &                      + dampk3/6.0d0)*expk
+     &                 - 2.0d0*termi2*termk
+     &                      *(1.0d0 + dampi + dampi2/3.0d0)*expi
+     &                 - 2.0d0*termk2*termi
+     &                      *(1.0d0 + dampk + dampk2/3.0d0)*expk
+            dmpik(7) = 1.0d0 - termi2*(1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0 + dampi4/30.0d0)*expi
+     &                 - termk2*(1.0d0 + dampk + 0.5d0*dampk2
+     &                      + dampk3/6.0d0 + dampk4/30.0d0)*expk
+     &                 - 2.0d0*termi2*termk*(1.0d0 + dampi
+     &                      + 2.0d0*dampi2/5.0d0 + dampi3/15.0d0)*expi
+     &                 - 2.0d0*termk2*termi*(1.0d0 + dampk
+     &                      + 2.0d0*dampk2/5.0d0 + dampk3/15.0d0)*expk
+            dmpik(9) = 1.0d0 - termi2*(1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0 + 4.0d0*dampi4/105.0d0
+     &                    + dampi5/210.0d0)*expi
+     &                 - termk2*(1.0d0 + dampk + 0.5d0*dampk2
+     &                      + dampk3/6.0d0 + 4.0d0*dampk4/105.0d0
+     &                      + dampk5/210.0d0)*expk
+     &                 - 2.0d0*termi2*termk*(1.0d0 + dampi
+     &                      + 3.0d0*dampi2/7.0d0
+     &                      + 2.0d0*dampi3/21.0d0
+     &                      + dampi4/105.0d0)*expi
+     &                 - 2.0d0*termk2*termi*(1.0d0 + dampk
+     &                      + 3.0d0*dampk2/7.0d0
+     &                      + 2.0d0*dampk3/21.0d0
+     &                      + dampk4/105.0d0)*expk
+            if (rorder .ge. 11) then
+               dampi6 = dampi3 * dampi3
+               dampk6 = dampk3 * dampk3
+               dmpik(11) = 1.0d0 - termi2*(1.0d0 + dampi
+     &                        + 0.5d0*dampi2 + dampi3/6.0d0
+     &                        + 5.0d0*dampi4/126.0d0
+     &                        + 2.0d0*dampi5/315.0d0
+     &                        + dampi6/1890.0d0)*expi
+     &                     - termk2*(1.0d0 + dampk
+     &                          + 0.5d0*dampk2 + dampk3/6.0d0
+     &                          + 5.0d0*dampk4/126.0d0
+     &                          + 2.0d0*dampk5/315.0d0
+     &                          + dampk6/1890.0d0)*expk
+     &                     - 2.0d0*termi2*termk*(1.0d0 + dampi
+     &                          + 4.0d0*dampi2/9.0d0 + dampi3/9.0d0
+     &                          + dampi4/63.0d0 + dampi5/945.0d0)*expi
+     &                     - 2.0d0*termk2*termi*(1.0d0 + dampk
+     &                          + 4.0d0*dampk2/9.0d0 + dampk3/9.0d0
+     &                          + dampk4/63.0d0 + dampk5/945.0d0)*expk
+            end if
+         end if
+c
+c     core-valence charge penetration damping for Gordon f2
+c
+      else if (pentyp .eq. 'GORDON2') then
+         dampi2 = dampi * dampi
+         dampi3 = dampi * dampi2
+         dmpi(1) = 1.0d0 - expi
+         dmpi(3) = 1.0d0 - (1.0d0 + dampi)*expi
+         dmpi(5) = 1.0d0 - (1.0d0 + dampi + dampi2/3.0d0)*expi
+         dmpi(7) = 1.0d0 - (1.0d0 + dampi + 0.4d0*dampi2
+     &                + dampi3/15.0d0)*expi
+         if (diff .lt. eps) then
+            dmpk(1) = dmpi(1)
+            dmpk(3) = dmpi(3)
+            dmpk(5) = dmpi(5)
+            dmpk(7) = dmpi(7)
+         else
+            dampk2 = dampk * dampk
+            dampk3 = dampk * dampk2
+            dmpk(1) = 1.0d0 - expk
+            dmpk(3) = 1.0d0 - (1.0d0 + dampk)*expk
+            dmpk(5) = 1.0d0 - (1.0d0 + dampk + dampk2/3.0d0)*expk
+            dmpk(7) = 1.0d0 - (1.0d0 + dampk + 0.4d0*dampk2
+     &                   + dampk3/15.0d0)*expk
+         end if
+c
+c     valence-valence charge penetration damping for Gordon f2
+c
+         dampi4 = dampi2 * dampi2
+         dampi5 = dampi2 * dampi3
+         if (diff .lt. eps) then
+            dampi6 = dampi3 * dampi3
+            dmpik(1) = 1.0d0 - (1.0d0 + 0.5d0*dampi)*expi
+            dmpik(3) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2)*expi
+            dmpik(5) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0)*expi
+            dmpik(7) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0 + dampi4/30.0d0)*expi
+            dmpik(9) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                    + dampi3/6.0d0 + 4.0d0*dampi4/105.0d0
+     &                    + dampi5/210.0d0)*expi
+            if (rorder .ge. 11) then
+               dmpik(11) = 1.0d0 - (1.0d0 + dampi + 0.5d0*dampi2
+     &                        + dampi3/6.0d0 + 5.0d0*dampi4/126.0d0
+     &                        + 2.0d0*dampi5/315.0d0
+     &                        + dampi6/1890.0d0)*expi
+            end if
+         else
+            dampk4 = dampk2 * dampk2
+            dampk5 = dampk2 * dampk3
+            alphai2 = alphai * alphai
+            alphak2 = alphak * alphak
+            termi = alphak2 / (alphak2-alphai2)
+            termk = alphai2 / (alphai2-alphak2)
+            dmpik(1) = 1.0d0 - termi*expi - termk*expk
+            dmpik(3) = 1.0d0 - termi*(1.0d0 + dampi)*expi
+     &                    - termk*(1.0d0 + dampk)*expk
+            dmpik(5) = 1.0d0 - termi*(1.0d0 + dampi + dampi2/3.0d0)*expi
+     &                    - termk*(1.0d0 + dampk + dampk2/3.0d0)*expk
+            dmpik(7) = 1.0d0 - termi*(1.0d0 + dampi + 0.4d0*dampi2
+     &                    + dampi3/15.0d0)*expi
+     &                 - termk*(1.0d0 + dampk + 0.4d0*dampk2
+     &                      + dampk3/15.0d0)*expk
+            dmpik(9) = 1.0d0 - termi*(1.0d0 + dampi + 3.0d0*dampi2/7.0d0
+     &                    + 2.0d0*dampi3/21.0d0 + dampi4/105.0d0)*expi
+     &                 - termk*(1.0d0 + dampk + 3.0d0*dampk2/7.0d0
+     &                      + 2.0d0*dampk3/21.0d0 + dampk4/105.0d0)*expk
+            if (rorder .ge. 11) then
+               dmpik(11) = 1.0d0 - termi*(1.0d0 + dampi
+     &                        + 4.0d0*dampi2/9.0d0 + dampi3/9.0d0
+     &                        + dampi4/63.0d0 + dampi5/945.0d0)*expi
+     &                     - termk*(1.0d0 + dampk
+     &                          + 4.0d0*dampk2/9.0d0 + dampk3/9.0d0
+     &                          + dampk4/63.0d0 + dampk5/945.0d0)*expk
+            end if
+         end if
+      end if
+      return
+      end

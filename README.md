@@ -13,8 +13,11 @@ make clean        # clean
 ## Lines in the input file
 ```
 # The input file can hold multiple lines of data.
+# X = R: Repulsion
+# X = G: Gordon 1
+# X = D: Dispersion
 # either
-dampi  dampj     xi     yi     zi     xj     yj     zj
+X   dampi  dampj     xi     yi     zi     xj     yj     zj
 # or
-dampi  dampj    rij
+X   dampi  dampj    rij
 ```

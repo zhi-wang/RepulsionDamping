@@ -25,7 +25,11 @@ c
 c
 c     compute tolerance value for damping exponents
 c
+#if defined(FLT_8)
       eps = 0.001d0
+#elif defined(FLT_4)
+      eps = 0.05
+#endif
       diff = abs(dmpi-dmpk)
 c
 c     treat the case where alpha damping exponents are equal

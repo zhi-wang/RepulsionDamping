@@ -16,11 +16,18 @@ extern "C"
                float* rr7, float* rr9, float* rr11, int* rorder, float* dmpi,
                float* dmpk, float* dmpik);
 
+   /* Fortran real*8 Gordon1 */
+   void dampg1d_(double* r, int* rorder, double* dmpi, double* dmpk,
+                 double* dmpik);
+
+   /* Fortran real*4 Gordon1 */
+   void dampg1s_(float* r, int* rorder, float* dmpi, float* dmpk, float* dmpik);
+
    /* Run tests in double precision. */
-   void rund(double arr[3]);
+   void rund(char c, double arr[3]);
 
    /* Run tests in single precision. */
-   void runs(float arr[3]);
+   void runs(char c, float arr[3]);
 
 #ifdef __cplusplus
 }

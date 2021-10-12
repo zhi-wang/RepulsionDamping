@@ -306,7 +306,7 @@ void prtdmp(RE* dmpik)
 }
 
 template <class RE>
-void run(RE arr[3])
+void run(char c, RE arr[3])
 {
    int rorder = 11;
    RE r = arr[0], dmpi = arr[1], dmpk = arr[2];
@@ -320,24 +320,39 @@ void run(RE arr[3])
    rr11 = 9 * rr9 / r2;
 
    printf("%s\n", "Current Impl");
-   if (sizeof(RE) == sizeof(double)) {
-      dampd_((double*)&r, (double*)&r2, (double*)&rr1, (double*)&rr3,
-             (double*)&rr5, (double*)&rr7, (double*)&rr9, (double*)&rr11,
-             &rorder, (double*)&dmpi, (double*)&dmpk, (double*)dmpik);
-   } else if (sizeof(RE) == sizeof(float)) {
-      damps_((float*)&r, (float*)&r2, (float*)&rr1, (float*)&rr3, (float*)&rr5,
-             (float*)&rr7, (float*)&rr9, (float*)&rr11, &rorder, (float*)&dmpi,
-             (float*)&dmpk, (float*)dmpik);
+   // clean
+   for (int i = 0; i < 11; ++i)
+      dmpik[i] = 0;
+   if (c == 'R' or c == 'r') {
+      if (sizeof(RE) == sizeof(double)) {
+         dampd_((double*)&r, (double*)&r2, (double*)&rr1, (double*)&rr3,
+                (double*)&rr5, (double*)&rr7, (double*)&rr9, (double*)&rr11,
+                &rorder, (double*)&dmpi, (double*)&dmpk, (double*)dmpik);
+      } else if (sizeof(RE) == sizeof(float)) {
+         damps_((float*)&r, (float*)&r2, (float*)&rr1, (float*)&rr3,
+                (float*)&rr5, (float*)&rr7, (float*)&rr9, (float*)&rr11,
+                &rorder, (float*)&dmpi, (float*)&dmpk, (float*)dmpik);
+      }
+   } else if (c == 'G' or c == 'g') {
+      if (sizeof(RE) == sizeof(double)) {
+         dampg1d_((double*)&r, &rorder, (double*)&dmpi, (double*)&dmpk,
+                  (double*)dmpik);
+      } else if (sizeof(RE) == sizeof(float)) {
+         dampg1s_((float*)&r, &rorder, (float*)&dmpi, (float*)&dmpk,
+                  (float*)dmpik);
+      }
    }
    prtdmp(dmpik);
    printf("%s\n", "New Impl");
    // clean
    for (int i = 0; i < 11; ++i)
       dmpik[i] = 0;
-   if (rorder == 9)
-      damp_rep<9>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi, dmpk);
-   else if (rorder == 11)
-      damp_rep<11>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi, dmpk);
+   if (c == 'R' or c == 'r') {
+      if (rorder == 9)
+         damp_rep<9>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi, dmpk);
+      else if (rorder == 11)
+         damp_rep<11>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi, dmpk);
+   }
    // copy
    dmpik[2 * 5] = dmpik[5];
    dmpik[2 * 4] = dmpik[4];
@@ -350,13 +365,13 @@ void run(RE arr[3])
 
 extern "C"
 {
-   void rund(double a[3])
+   void rund(char c, double a[3])
    {
-      run<double>(a);
+      run<double>(c, a);
    }
 
-   void runs(float a[3])
+   void runs(char c, float a[3])
    {
-      run<float>(a);
+      run<float>(c, a);
    }
 }
