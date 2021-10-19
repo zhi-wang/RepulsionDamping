@@ -87,7 +87,7 @@ inline real fsinhc_taylor(real x2)
 }
 
 //*
-#pragma acc routine seq
+#   pragma acc routine seq
 template <int N, class real>
 SEQ_CUDA
 inline real fsinhc_pade44(real x2, real x4)
@@ -128,7 +128,7 @@ inline real fsinhc_pade44(real x2, real x4)
 }
 // */
 
-#pragma acc routine seq
+#   pragma acc routine seq
 template <int N, class real>
 SEQ_CUDA
 inline real fsinhc(real d, real d2, real d3, real d4, real expmd /* exp(-d) */,
@@ -281,8 +281,7 @@ inline T fsinhc_series(T x2)
 #pragma acc routine seq
 template <class T>
 SEQ_CUDA
-inline T fsinhc_analyt_7(T d, T d2, T d3, T d5, T d7, T d9, T d11, T d13,
-                         T y /* exp(-d) */, T z /* exp(+d) */)
+inline T fsinhc_analyt_7(T d, T d13, T y /* exp(-d) */, T z /* exp(+d) */)
 {
    T cy, cz;
    cy =
@@ -297,8 +296,7 @@ inline T fsinhc_analyt_7(T d, T d2, T d3, T d5, T d7, T d9, T d11, T d13,
 #pragma acc routine seq
 template <class T>
 SEQ_CUDA
-inline T fsinhc_analyt_6(T d, T d2, T d3, T d5, T d7, T d9, T d11,
-                         T y /* exp(-d) */, T z /* exp(+d) */)
+inline T fsinhc_analyt_6(T d, T d11, T y /* exp(-d) */, T z /* exp(+d) */)
 {
    T cy, cz;
    cy = d * (d * (d * (d * (d + 15) + 105) + 420) + 945) + 945;
@@ -310,8 +308,7 @@ inline T fsinhc_analyt_6(T d, T d2, T d3, T d5, T d7, T d9, T d11,
 #pragma acc routine seq
 template <class T>
 SEQ_CUDA
-inline T fsinhc_analyt_5(T d, T d2, T d3, T d5, T d7, T d9, T y /* exp(-d) */,
-                         T z /* exp(+d) */)
+inline T fsinhc_analyt_5(T d, T d9, T y /* exp(-d) */, T z /* exp(+d) */)
 {
    T cy, cz;
    cy = d * (d * (d * (d + 10) + 45) + 105) + 105;
@@ -324,8 +321,7 @@ inline T fsinhc_analyt_5(T d, T d2, T d3, T d5, T d7, T d9, T y /* exp(-d) */,
 #pragma acc routine seq
 template <class T>
 SEQ_CUDA
-inline T fsinhc_analyt_4(T d, T d2, T d3, T d5, T d7, T y /* exp(-d) */,
-                         T z /* exp(+d) */)
+inline T fsinhc_analyt_4(T d, T d7, T y /* exp(-d) */, T z /* exp(+d) */)
 {
    T cy, cz;
    cy = d * (d * (d + 6) + 15) + 15;
@@ -337,13 +333,12 @@ inline T fsinhc_analyt_4(T d, T d2, T d3, T d5, T d7, T y /* exp(-d) */,
 #pragma acc routine seq
 template <class T>
 SEQ_CUDA
-inline T fsinhc_analyt_3(T d, T d2, T d3, T d5, T y /* exp(-d) */,
-                         T z /* exp(+d) */)
+inline T fsinhc_analyt_3(T d, T d5, T y /* exp(-d) */, T z /* exp(+d) */)
 {
    T cy, cz;
-   cy = d2 + 3 * d + 3;
+   cy = (d + 3) * d + 3;
    cy = -cy;
-   cz = d2 - 3 * d + 3;
+   cz = (d - 3) * d + 3;
    return (cy * y + cz * z) / (2 * d5);
 }
 
@@ -439,7 +434,7 @@ inline void fsinhc_impl(T d, T& restrict f1d, T& restrict f2d, T& restrict f3d,
    if CONSTEXPR (N >= 3) {
       d5 = d2 * d3;
       if (absd > eps) {
-         f3d = fsinhc_analyt_3(d, d2, d3, d5, expmd, exppd);
+         f3d = fsinhc_analyt_3(d, d5, expmd, exppd);
       } else {
          f3d = fsinhc_series<3>(d2);
       }
@@ -448,7 +443,7 @@ inline void fsinhc_impl(T d, T& restrict f1d, T& restrict f2d, T& restrict f3d,
       d4 = d2 * d2;
       d7 = d3 * d4;
       if (absd > eps) {
-         f4d = fsinhc_analyt_4(d, d2, d3, d5, d7, expmd, exppd);
+         f4d = fsinhc_analyt_4(d, d7, expmd, exppd);
       } else {
          f4d = fsinhc_series<4>(d2);
       }
@@ -456,7 +451,7 @@ inline void fsinhc_impl(T d, T& restrict f1d, T& restrict f2d, T& restrict f3d,
    if CONSTEXPR (N >= 5) {
       d9 = d3 * d3 * d3;
       if (absd > eps) {
-         f5d = fsinhc_analyt_5(d, d2, d3, d5, d7, d9, expmd, exppd);
+         f5d = fsinhc_analyt_5(d, d9, expmd, exppd);
       } else {
          f5d = fsinhc_series<5>(d2);
       }
@@ -464,7 +459,7 @@ inline void fsinhc_impl(T d, T& restrict f1d, T& restrict f2d, T& restrict f3d,
    if CONSTEXPR (N >= 6) {
       d11 = d3 * d4 * d4;
       if (absd > eps) {
-         f6d = fsinhc_analyt_6(d, d2, d3, d5, d7, d9, d11, expmd, exppd);
+         f6d = fsinhc_analyt_6(d, d11, expmd, exppd);
       } else {
          f6d = fsinhc_series<6>(d2);
       }
@@ -472,7 +467,7 @@ inline void fsinhc_impl(T d, T& restrict f1d, T& restrict f2d, T& restrict f3d,
    if CONSTEXPR (N >= 7) {
       d13 = d3 * d3 * d3 * d4;
       if (absd > eps) {
-         f7d = fsinhc_analyt_7(d, d2, d3, d5, d7, d9, d11, d13, expmd, exppd);
+         f7d = fsinhc_analyt_7(d, d13, expmd, exppd);
       } else {
          f7d = fsinhc_series<7>(d2);
       }
