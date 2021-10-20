@@ -808,10 +808,7 @@ inline void damp_disp(real* restrict dmpik, real r, real rr1, real ai, real aj)
 
    real t = (ai + aj) * r;
    real x = a / t, y = 1 - x;
-
-   real c2 = c * c, c3 = c * c * c;
-   real d2 = d * d, d3 = d * d * d;
-   real d4 = d2 * d2;
+   real c3 = c * c * c, d2 = d * d;
 
    real f1d, f2d, f3d;
    if CONSTEXPR (DO_G)
