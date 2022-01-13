@@ -552,7 +552,7 @@ inline void fsinhc7(T d, T& restrict f1d, T& restrict f2d, T& restrict f3d,
 /* ------ New Implementation ------ */
 
 #pragma acc routine seq
-template <int order, class real>
+template <int ver, int order, class real>
 SEQ_CUDA
 inline void damp_rep(real* restrict dmpik, real r, real rr1, real r2, real rr3,
                      real rr5, real rr7, real rr9, real rr11, real ai, real aj)
@@ -561,7 +561,8 @@ inline void damp_rep(real* restrict dmpik, real r, real rr1, real r2, real rr3,
    pfac = pfac * pfac;
    pfac = pfac * ai * aj;
    pfac = pfac * pfac * pfac;
-   pfac *= r2;
+   if (ver == 1)
+      pfac *= r2;
 
    real a = ai * r / 2, b = aj * r / 2;
    real c = (a + b) / 2, d = (b - a) / 2;
@@ -583,12 +584,15 @@ inline void damp_rep(real* restrict dmpik, real r, real rr1, real r2, real rr3,
 
    real inv3 = 1. / 3, inv15 = 1. / 15, inv105 = 1. / 105, inv945 = 1. / 945;
 
+   real r2_3 = 2. / 3.;
+
    // compute
    // clang-format off
    real s;
    s = f1d * (c+1)
      + f2d * c2;
-   s *= rr1;
+   if (ver == 1)
+      s *= rr1;
    s *= expmc;
    dmpik[0] = pfac * s * s;
 
@@ -596,18 +600,30 @@ inline void damp_rep(real* restrict dmpik, real r, real rr1, real r2, real rr3,
    ds = f1d * c2
       + f2d * ((c-2)*c2 - (c+1)*d2)
       - f3d * c2d2;
-   ds *= rr3;
+   if (ver == 1)
+      ds *= rr3;
+   else if (ver == 2)
+      ds = -ds;
    ds *= expmc;
-   dmpik[1] = pfac * 2 * s * ds;
+   if (ver == 1)
+      dmpik[1] = pfac * 2 * s * ds;
+   else if (ver == 2)
+      dmpik[1] = pfac * (s*s - 2*s*ds);
 
    real d2s = 0;
    d2s += f1d * c3
         + f2d * c2*((c-3)*c - 2*d2);
    d2s += d2*(f3d * (2*(2-c)*c2 + (c+1)*d2)
             + f4d * c2d2);
-   d2s *= rr5 * inv3;
+   if (ver == 1)
+      d2s *= rr5 * inv3;
+   else if (ver == 2)
+      d2s *= inv3;
    d2s *= expmc;
-   dmpik[2] = pfac * 2 * (s * d2s + ds * ds);
+   if (ver == 1)
+      dmpik[2] = pfac * 2 * (s * d2s + ds * ds);
+   else if (ver == 2)
+      dmpik[2] = pfac * (s*s -2*s*ds +r2_3*ds*ds +2*s*d2s);
 
    real d3s = 0;
    d3s += f1d * c3*(c+1)
@@ -615,9 +631,13 @@ inline void damp_rep(real* restrict dmpik, real r, real rr1, real r2, real rr3,
    d3s -= d2*(f3d * 3*c2*((c-3)*c - d2)
          + d2*(f4d * (3*(2-c)*c2 + (c+1)*d2)
              + f5d * c2d2));
-   d3s *= rr7 * inv15;
+   if (ver == 1)
+      d3s *= rr7 * inv15;
+   else if (ver == 2)
+      d3s *= r * r * r * inv15;
    d3s *= expmc;
-   dmpik[3] = pfac * 2 * (s * d3s + 3 * ds * d2s);
+   if (ver == 1)
+      dmpik[3] = pfac * 2 * (s * d3s + 3 * ds * d2s);
 
    real d4s = 0;
    d4s += f1d * c3*(3 + c*(c+3))
@@ -626,9 +646,13 @@ inline void damp_rep(real* restrict dmpik, real r, real rr1, real r2, real rr3,
             + d2*(f4d * 2*c2*(3*(c-3)*c - 2*d2)
                 + f5d * d2*(4*(2-c)*c2 + (c+1)*d2)
                 + f6d * c2*d4));
-   d4s *= rr9 * inv105;
+   if (ver == 1)
+      d4s *= rr9 * inv105;
+   else if (ver == 2)
+      d4s *= r * r * r * r * inv105;
    d4s *= expmc;
-   dmpik[4] = pfac * 2 * (s * d4s + 4 * ds * d3s + 3 * d2s * d2s);
+   if (ver == 1)
+      dmpik[4] = pfac * 2 * (s * d4s + 4 * ds * d3s + 3 * d2s * d2s);
 
    if CONSTEXPR (order > 9) {
       real d5s = 0;
@@ -639,9 +663,13 @@ inline void damp_rep(real* restrict dmpik, real r, real rr1, real r2, real rr3,
                    + d2*(f5d * 5*c2*(2*(c-3)*c - d2)
                        + f6d * d2*((c+1)*d2 - 5*(c-2)*c2)
                        + f7d * c2*d4)));
-      d5s *= rr11 * inv945;
+      if (ver == 1)
+         d5s *= rr11 * inv945;
+      else if (ver == 2)
+         d5s *= r * r * r * r * r * inv945;
       d5s *= expmc;
-      dmpik[5] = pfac * 2 * (s * d5s + 5 * ds * d4s + 10 * d2s * d3s);
+      if (ver == 1)
+         dmpik[5] = pfac * 2 * (s * d5s + 5 * ds * d4s + 10 * d2s * d3s);
    }
    // clang-format on
 }
@@ -899,6 +927,16 @@ void run(char c, RE arr[3])
                 (float*)&rr5, (float*)&rr7, (float*)&rr9, (float*)&rr11,
                 &rorder, (float*)&dmpi, (float*)&dmpk, (float*)dmpik);
       }
+   } else if (c == 'S' or c == 's') {
+      if (sizeof(RE) == sizeof(double)) {
+         damp2d_((double*)&r, (double*)&r2, (double*)&rr1, (double*)&rr3,
+                 (double*)&rr5, (double*)&rr7, (double*)&rr9, (double*)&rr11,
+                 &rorder, (double*)&dmpi, (double*)&dmpk, (double*)dmpik);
+      } else if (sizeof(RE) == sizeof(float)) {
+         damp2s_((float*)&r, (float*)&r2, (float*)&rr1, (float*)&rr3,
+                 (float*)&rr5, (float*)&rr7, (float*)&rr9, (float*)&rr11,
+                 &rorder, (float*)&dmpi, (float*)&dmpk, (float*)dmpik);
+      }
    } else if (c == 'G' or c == 'g') {
       if (sizeof(RE) == sizeof(double)) {
          dampg1d_((double*)&r, &rorder, (double*)&dmpi, (double*)&dmpk,
@@ -921,9 +959,18 @@ void run(char c, RE arr[3])
       dmpik[i] = 0;
    if (c == 'R' or c == 'r') {
       if (rorder == 9)
-         damp_rep<9>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi, dmpk);
+         damp_rep<1, 9>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi,
+                        dmpk);
       else if (rorder == 11)
-         damp_rep<11>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi, dmpk);
+         damp_rep<1, 11>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi,
+                         dmpk);
+   } else if (c == 'S' or c == 's') {
+      if (rorder == 9)
+         damp_rep<2, 9>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi,
+                        dmpk);
+      else if (rorder == 11)
+         damp_rep<2, 11>(dmpik, r, rr1, r2, rr3, rr5, rr7, rr9, rr11, dmpi,
+                         dmpk);
    } else if (c == 'G' or c == 'g') {
       if (rorder == 9)
          damp_gordon1<9>(dmpik, r, dmpi, dmpk);

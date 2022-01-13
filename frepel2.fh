@@ -1,0 +1,171 @@
+      subroutine DAMPREP2 (r,r2,rr1,rr3,rr5,rr7,rr9,rr11,
+     &                       rorder,dmpi,dmpk,dmpik)
+      implicit none
+      integer rorder
+      RE r,r2,r3,r4
+      RE r5,r6,r7,r8
+      RE rr1,rr3,rr5
+      RE rr7,rr9,rr11
+      RE s,ds,d2s
+      RE d3s,d4s,d5s
+      RE dmpi,dmpk
+      RE dmpi2,dmpk2
+      RE dmpi22,dmpi23
+      RE dmpi24,dmpi25
+      RE dmpi26,dmpi27
+      RE dmpk22,dmpk23
+      RE dmpk24,dmpk25
+      RE dmpk26
+      RE eps,diff
+      RE expi,expk
+      RE dampi,dampk
+      RE pre,term,tmp
+      RE dmpik(*)
+      RE dampi2,dampi3,dampi4,dampi5
+      RE dampk2,dampk3,dampk4,dampk5
+      RE pi1,pi2,pi3,pi4,pi5
+      RE pk1,pk2,pk3,pk4,pk5
+      RE s0s1,s0s2,s0s3,s0s4,s0s5
+      RE s1s1,s1s2,s1s3,s1s4
+      RE s2s2,s2s3
+      RE f5,f7,f9,f11
+      RE term3,pik,pre3
+c
+c
+c     compute tolerance value for damping exponents
+c
+#if defined(FLT_8)
+      eps = 0.001d0
+#elif defined(FLT_4)
+      eps = 0.05
+#endif
+      diff = abs(dmpi-dmpk)
+c
+c     treat the case where alpha damping exponents are equal
+c
+      if (.true.) then
+         r3 = r2 * r
+         r4 = r3 * r
+         r5 = r4 * r
+         r6 = r5 * r
+c
+c     treat the case where alpha damping exponents are equal
+c
+         if (diff .lt. eps) then
+            pre = dmpi * dmpi
+            dmpi2 = 0.5d0 * dmpi
+            dampi = dmpi2 * r
+            dampi2 = dampi * dampi
+            expi = exp(-dampi)
+            dmpi22 = dmpi2 * dmpi2
+            s = (1.0d0 + dampi + dampi2/3.0d0) * expi / dmpi**3
+            ds = -r * (1.0d0 + dampi) * expi / (12.0d0*dmpi)
+            d2s = -(1.0d0 + dampi - dampi2) * expi / (12.0d0*dmpi)
+            d3s = dampi * (1.0d0 - dampi/3.0d0) * expi / 8.0d0
+            if (rorder .ge. 9) then
+               d4s = dmpi2 * (1.0d0 - 10.0d0*dampi/6.0d0+dampi2/3.0d0)
+     &               * expi / 8.0d0
+               if (rorder .ge. 11) then
+                  d5s = -dmpi22 * (1 - 7.0d0*dampi/8.0d0 + dampi2/8.0d0)
+     &               * expi / 3.0d0
+               end if
+            end if
+c
+c     treat the case where alpha damping exponents are unequal
+c
+         else
+            pre = dmpi * dmpk
+            dmpi2 = 0.5d0 * dmpi
+            dmpk2 = 0.5d0 * dmpk
+            dmpi22 = dmpi2 * dmpi2
+            dmpk22 = dmpk2 * dmpk2
+            dampi = dmpi2 * r
+            dampk = dmpk2 * r
+            expi = exp(-dampi)
+            expk = exp(-dampk)
+            term = dmpi22 - dmpk22
+            term3 = term**3
+            pik = term * r2 / 4.0d0
+            dampi2 = dampi * dampi
+            dampi3 = dampi2 * dampi
+            dampk2 = dampk * dampk
+            dampk3 = dampk2 * dampk
+            s = (dmpk * (term * r + 2.0d0 * dmpi) * expi
+     &         + dmpi * (term * r - 2.0d0 * dmpk) * expk)
+     &         / (2.0d0 * term3 * r)
+            pi1 = 1 + dampi
+            pi2 = pi1 + dampi2 / 2.0d0
+            pi3 = pi2 + dampi3 / 6.0d0
+            pk1 = -1 - dampk
+            pk2 = pk1 - dampk2 / 2.0d0
+            pk3 = pk2 - dampk3 / 6.0d0
+            ds = -pre * ((pi1 + pik) * expi + (pk1 + pik) * expk)
+     &            / (term3 * r2)
+            d2s = 2.0d0 * pre * ((pi2 + pik*dampi/2.0d0) * expi
+     &            + (pk2 + pik*dampk/2.0d0) * expk) / (term3 * r3)
+            d3s = -6.0d0 * pre * ((pi3 + pik*dampi2/6.0d0) * expi
+     &            + (pk3 + pik*dampk2/6.0d0) * expk) / (term3 * r4)
+            if (rorder .ge. 9) then
+               dampi4 = dampi3 * dampi
+               dampk4 = dampk3 * dampk
+               pi4 = pi3 + dampi4 / 24.0d0
+               pk4 = pk3 - dampk4 / 24.0d0
+               d4s = 24.0d0 * pre * ((pi4 + pik*dampi3/24.0d0) * expi
+     &            + (pk4 + pik*dampk3/24.0d0) * expk) / (term3 * r5)
+               if (rorder .ge. 11) then
+                  dampi5 = dampi4 * dampi
+                  dampk5 = dampk4 * dampk
+                  pi5 = pi4 + dampi5 / 120.0d0
+                  pk5 = pk4 - dampk5 / 120.0d0
+                  d5s = -120.0d0*pre * ((pi5 + pik*dampi4/120.0d0)*expi
+     &               + (pk5 + pik*dampk4/120.0d0) * expk) / (term3 * r6)
+               end if
+            end if
+         end if
+      end if
+c
+c     convert partial derivatives into full derivatives
+c
+      if (.true.) then
+         pre3 = pre**3
+         s0s1 = s * ds * pre3
+         s0s2 = s * d2s * pre3
+         s0s3 = s * d3s * pre3
+         s1s1 = ds * ds * pre3
+         s1s2 = ds * d2s * pre3
+         f5 = s1s1 + s0s2
+         f7 = 3.0d0*s1s2 + s0s3
+         dmpik(1) = s * s * pre3
+         dmpik(3) = dmpik(1) - 2.0d0*s0s1*r
+         dmpik(5) = dmpik(3) + 2.0d0/3.0d0 * f5 * r2
+         dmpik(7) = dmpik(5) + 2.0d0/15.0d0 * f5 * r2
+     &                       - 2.0d0/15.0d0 * f7 * r3
+         if (rorder .ge. 9) then
+            s0s4 = s * d4s * pre3
+            s1s3 = ds * d3s * pre3
+            s2s2 = d2s * d2s * pre3
+            f9 = 3.0d0*s2s2 + 4.0d0*s1s3 + s0s4
+            dmpik(9) = dmpik(7) + 2.0d0/35.0d0 * f5 * r2
+     &                          - 2.0d0/35.0d0 * f7 * r3
+     &                          + 2.0d0/105.0d0 * f9 * r4
+            if (rorder .ge. 11) then
+               s0s5 = s * d5s * pre3
+               s1s4 = ds * d4s * pre3
+               s2s3 = d2s * d3s * pre3
+               f11 = 10.0d0*s2s3 + 5.0d0*s1s4 + s0s5
+               dmpik(11) = dmpik(9) + 2.0d0/63.0d0 * f5 * r2
+     &                              - 2.0d0/63.0d0 * f7 * r3
+     &                              + 4.0d0/315.0d0 * f9 * r4
+     &                              - 2.0d0/945.0d0 * f11 * r5
+            end if
+         end if
+      end if
+#if 0
+   10 format(a5,3f16.8)
+      write(*,10) 'FFFF',(0.5*pre)**0.5*d5s,
+     &   (0.5*pre)**0.5*d4s,(0.5*pre)**0.5*d3s
+      write(*,10) 'FFFF',(0.5*pre)**0.5*d2s,
+     &   (0.5*pre)**0.5*ds,(0.5*pre)**0.5*s
+#endif
+      return
+      end

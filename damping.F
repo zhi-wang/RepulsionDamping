@@ -5,6 +5,10 @@
 #include "frepel.fh"
 #undef DAMPREP
 
+#define DAMPREP2 damp2d
+#include "frepel2.fh"
+#undef DAMPREP2
+
 #define DAMPG1 dampg1d
 #define DAMPPOLE damppoled
 #include "fgordon.fh"
@@ -26,6 +30,10 @@
 #define DAMPREP damps
 #include "frepel.fh"
 #undef DAMPREP
+
+#define DAMPREP2 damp2s
+#include "frepel2.fh"
+#undef DAMPREP2
 
 #define DAMPG1 dampg1s
 #define DAMPPOLE damppoles

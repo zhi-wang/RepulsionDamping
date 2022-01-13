@@ -1,10 +1,10 @@
 OPT = -O3 -ffast-math
 FC = gfortran
 
-.PHONY: all
+.PHONY: all clean
 all: a.out
 
-damping.o: damping.F frepel.fh fgordon.fh fdisp.fh
+damping.o: damping.F frepel.fh frepel2.fh fgordon.fh fdisp.fh
 	$(FC) damping.F -c $(OPT) -o $@
 
 main.o: main.c
@@ -16,6 +16,5 @@ main.o: main.c
 a.out: main.o damp.o damping.o
 	$(FC) $^ $(OPT) -o $@
 
-.PHONY: clean
 clean:
 	rm -f *.o a.out
